@@ -1,0 +1,74 @@
+[package]
+edition = "2021"
+name = "led_game"
+version = "0.1.0"
+authors = ["Brad Gibson <u007d@humanenginuity.com>"]
+resolver = "2"
+
+[dependencies]
+defmt = "0.3"
+defmt-rtt = "0.4"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
+embedded-io = "0.6.1"
+embedded-io-async = "0.6.1"
+embedded-storage = "0.3.1"
+
+cortex-m-rt = "0.7.3"
+
+embassy-executor = { version = "0.5.0", features = ["task-arena-size-1024", "arch-cortex-m", "executor-thread", "defmt", "integrated-timers", "executor-interrupt"] }
+embassy-sync = { version = "0.5.0" }
+embassy-time = { version = "0.3.0", features = ["defmt", "defmt-timestamp-uptime"] }
+
+cortex-m = { version = "0.7.6" }
+embassy-rp = { version = "0.1.0", features = ["defmt", "unstable-pac", "time-driver", "critical-section-impl"] }
+
+[lints.rust]
+# Uncomment before ship to reconcile use of possibly redundant crates, debug remnants, missing
+# license files and more
+#blanket_clippy_restriction_lints = "allow"
+#implicit_return = "allow"
+#cargo = "warn"
+#restriction = "warn"
+
+# To use the `unsafe` keyword, do not remove the `unsafe_code = "forbid"` entry.
+# Instead, prefer to change it to `unsafe_code = "deny"` + opt-in with local use of
+# `#[allow(unsafe_code)]`'s on an as needed basis.
+unsafe_code = "deny"
+bare_trait_objects = "forbid"
+
+rust_2018_idioms = "warn"
+
+# Uncomment before ship to reconcile use of possibly redundant crates, debug remnants, missing
+# license files and more
+#missing_docs = "warn"
+#warnings = "deny"
+
+[lints.clippy]
+# Safety-critical application lints
+arithmetic_side_effects = "deny"
+float_cmp_const = "deny"
+indexing_slicing = "deny"
+pedantic = { level = "deny", priority = -1 }
+unwrap_used = "deny"
+wildcard_imports = "deny"
+
+all = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# End of safety-critical application lints
+
+enum_variant_names = "allow"
+equatable_if_let = "allow"
+implicit_return = "allow"
+items-after-statements = "allow"
+iter_nth_zero = "allow"
+match_bool = "allow"
+match-same-arms = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+obfuscated_if_else = "allow"
+similar_names = "allow"
+unnecessary_wraps = "allow"
+enum_glob_use = "deny"
