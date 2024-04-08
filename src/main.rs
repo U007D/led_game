@@ -10,6 +10,9 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(_spawner: Spawner) -> ! {
     let peripherals = embassy_rp::init(Default::default());
     let mut led = Output::new(peripherals.PIN_0, Level::Low);
+    let mut _d1 = Output::new(peripherals.PIN_1, Level::Low);
+    let mut _a = Output::new(peripherals.PIN_5, Level::High);
+
     loop {
         defmt::info!("Blink");
 
