@@ -2,24 +2,26 @@
 #![no_main]
 
 use embassy_executor::Spawner;
-use embassy_rp::gpio::{Level, Output};
-use embassy_time::{Timer};
-use {defmt_rtt as _, panic_probe as _};
+use embassy_time::Timer;
+
+use led_game::Game;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
-    let peripherals = embassy_rp::init(Default::default());
-    let mut led = Output::new(peripherals.PIN_0, Level::Low);
-    let mut _d1 = Output::new(peripherals.PIN_1, Level::Low);
-    let mut _a = Output::new(peripherals.PIN_5, Level::High);
+    let mut game = Game::new();
+    // PANIC SAFETY //
+    // `fn run() -> Result<!, Error>` only returns if there was an error (`Ok` path is divergent),
+    // so `unwrap_err()` cannot panic.
+    let err = game
+        .run()
+        .await
+        .expect_err("Internal Error: `Game::run()` should never return success, but did.");
 
+    defmt::error!("Game exited with error {}.", err);
+
+    // Fast-blink LED forever to signify error condition to user
     loop {
-        defmt::info!("Blink");
-
-        led.set_high();
-        Timer::after_millis(500).await;
-
-        led.set_low();
-        Timer::after_millis(500).await;
+        game.toggle_led();
+        Timer::after_millis(100).await;
     }
 }
