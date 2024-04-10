@@ -1,4 +1,4 @@
-use core::num::TryFromIntError;
+use core::{char::TryFromCharError, num::TryFromIntError};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum LedDigit {
@@ -12,15 +12,43 @@ pub enum LedDigit {
     Seven,
     Eight,
     Nine,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+}
+
+impl TryFrom<char> for LedDigit {
+    type Error = TryFromCharError;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        const U8_OVERFLOW: char = '\u{0100}';
+
+        let value = value.to_ascii_lowercase();
+
+        use LedDigit as D;
+        match value {
+            'a' => Ok(D::A),
+            'b' => Ok(D::B),
+            'c' => Ok(D::C),
+            'd' => Ok(D::D),
+            'e' => Ok(D::E),
+            'f' => Ok(D::F),
+            // Unfortunately, `core::char::TryFromCharError` is not directly constructable (it
+            // does not have a constructor, has private fields and is sealed); this workaround
+            // manufactures one.
+            _ => Err(u8::try_from(U8_OVERFLOW).unwrap_err()),
+        }
+    }
 }
 
 impl TryFrom<u16> for LedDigit {
     type Error = TryFromIntError;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        // TODO: Constify once const `From<T>` stabilizes
-        let u8_overflow = u16::from(u8::MAX).saturating_add(1);
-        let value = value.into();
+        const U8_OVERFLOW: u16 = 256;
 
         use LedDigit as D;
         match value {
@@ -34,9 +62,10 @@ impl TryFrom<u16> for LedDigit {
             7 => Ok(D::Seven),
             8 => Ok(D::Eight),
             9 => Ok(D::Nine),
-            // Sadly, `core::convert::TryFromIntError` is not directly constructable; this
-            // workaround manufactures one.
-            _ => Err(<u8 as TryFrom<u16>>::try_from(u8_overflow).unwrap_err()),
+            // Unfortunately, `core::num::TryFromIntError` is not directly constructable (it
+            // does not have a constructor, has private fields and is sealed); this workaround
+            // manufactures one.
+            _ => Err(u8::try_from(U8_OVERFLOW).unwrap_err()),
         }
     }
 }
