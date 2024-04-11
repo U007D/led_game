@@ -1,19 +1,15 @@
-use crate::{CHANNEL, message::Message};
-use embassy_rp::gpio::{AnyPin, Input, Level, Output, Pull};
-use embassy_time::Timer;
+use crate::{GAME_CHANNEL, message::Message};
+use embassy_rp::gpio::{AnyPin, Input, Pull};
 
 #[embassy_executor::task]
-pub async fn button_driver(button_pin: AnyPin, led_pin: AnyPin) {
+pub async fn button_driver(button_pin: AnyPin) {
     let mut button = Input::new(button_pin, Pull::Down);
-    let mut led = Output::new(led_pin, Level::High);
 
     loop {
         button.wait_for_rising_edge().await;
-        led.toggle();
-        // CHANNEL.send(Message::Start).await;
+        GAME_CHANNEL.send(Message::ButtonDown).await;
 
         button.wait_for_falling_edge().await;
-        // CHANNEL.send(Message::Stop).await;
-        led.toggle();
+        GAME_CHANNEL.send(Message::ButtonUp).await;
     }
 }

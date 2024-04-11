@@ -16,4 +16,14 @@ pub enum Error {
     HexDigit(#[from] hex_digit::Error),
     #[error(transparent)]
     Message(#[from] message::Error),
+    #[error(
+        "Error spawning new {1} task. (increase `#[embassy_executor::task(pool_size = n)]`)? {0:?}"
+    )]
+    TaskSpawn(embassy_executor::SpawnError, &'static str),
+}
+
+impl From<(embassy_executor::SpawnError, &'static str)> for Error {
+    fn from((error, task_name): (embassy_executor::SpawnError, &'static str)) -> Self {
+        Self::TaskSpawn(error, task_name)
+    }
 }

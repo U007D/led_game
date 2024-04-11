@@ -3,11 +3,25 @@
 
 pub mod button_driver;
 pub mod error;
-mod led_driver;
+mod game_loop;
 mod message;
+pub mod numeric_led_driver;
+mod score_driver;
+mod solo_led_driver;
 
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
+use core::sync::atomic::AtomicU16;
 
-pub use {button_driver::button_driver, led_driver::led_driver, message::Message};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, mutex::Mutex};
 
-pub static CHANNEL: Channel<CriticalSectionRawMutex, Message, 1> = Channel::new();
+use crate::numeric_led_driver::DecimalPos;
+pub use {
+    button_driver::button_driver, game_loop::game_loop, message::Message,
+    score_driver::score_driver, solo_led_driver::solo_led_driver,
+};
+
+pub static DECIMAL_POS: Mutex<CriticalSectionRawMutex, DecimalPos> =
+    Mutex::new(DecimalPos::Thousands);
+pub static GAME_CHANNEL: Channel<CriticalSectionRawMutex, Message, 1> = Channel::new();
+pub static SCORE_CHANNEL: Channel<CriticalSectionRawMutex, Message, 1> = Channel::new();
+pub static SOLO_LED_CHANNEL: Channel<CriticalSectionRawMutex, Message, 1> = Channel::new();
+pub static SCORE: AtomicU16 = AtomicU16::new(0);
