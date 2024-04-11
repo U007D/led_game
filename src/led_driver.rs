@@ -1,16 +1,11 @@
-use crate::LED;
+use embassy_rp::gpio::{AnyPin, Level, Output};
 use embassy_time::Timer;
 
 #[embassy_executor::task]
-pub async fn led_driver() {
+pub async fn led_driver(led_pin: AnyPin) {
+    let mut led = Output::new(led_pin, Level::Low);
     loop {
-        {
-            LED.lock()
-                .await
-                .as_mut()
-                .expect("Internal Error: `LED` not initialized")
-                .toggle();
-        }
-        Timer::after_millis(700).await;
+        led.toggle();
+        Timer::after_millis(500).await;
     }
 }
