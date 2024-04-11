@@ -1,16 +1,13 @@
 #![feature(error_in_core)]
 #![no_std]
 
-use embassy_rp::gpio::{AnyPin, Output};
-use embassy_rp::peripherals::PIN_0;
-use crate::message::Message;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
-use embassy_sync::mutex::Mutex;
-
-// pub mod button_driver;
+pub mod button_driver;
 pub mod error;
-pub mod led_driver;
+mod led_driver;
 mod message;
 
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel};
+
+pub use {button_driver::button_driver, led_driver::led_driver, message::Message};
+
 pub static CHANNEL: Channel<CriticalSectionRawMutex, Message, 1> = Channel::new();
-pub static LED: Mutex<CriticalSectionRawMutex, Option<Output<'static, AnyPin>>> = Mutex::new(None);
