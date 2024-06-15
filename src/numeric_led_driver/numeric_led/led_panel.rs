@@ -1,4 +1,6 @@
-use crate::numeric_led_driver::DecimalPos;
+mod decimal_separator;
+
+pub use decimal_separator::DecimalSeparator;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum LedPanel {
@@ -9,9 +11,9 @@ pub enum LedPanel {
 }
 
 impl LedPanel {
-    pub fn has_dp(&self, decimal_pos: DecimalPos) -> bool {
+    pub fn has_dp(&self, decimal_pos: DecimalSeparator) -> bool {
+        use DecimalSeparator as Dp;
         use LedPanel as Lp;
-        use DecimalPos as Dp;
         match self {
             Lp::One => decimal_pos == Dp::Thousands,
             Lp::Two => decimal_pos == Dp::Hundreds,
@@ -20,5 +22,3 @@ impl LedPanel {
         }
     }
 }
-
-

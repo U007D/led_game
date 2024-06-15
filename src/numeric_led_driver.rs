@@ -1,20 +1,21 @@
-mod decimal_pos;
 mod numeric_led;
 
 use core::sync::atomic::Ordering;
 
 use embassy_time::Duration;
 
-pub use crate::DECIMAL_POS;
 use crate::SCORE;
-pub use {decimal_pos::DecimalPos, numeric_led::NumericLed, numeric_led::NumericLedPins};
+pub use numeric_led::{DecimalSeparator, NumericLed, NumericLedPins};
 
+// At the time of writing, `embassy-rs` does not support tasks with generic parameters.  The generic
+// parameter arises from the `Output<'_, T>` type.  So to work around this issue, we provide the pin
+// instances required by `NumericLed` without the accompanying borrow required by `Output`.  The
+// pins are configured as `Output<'_, T>` pins within this task.
 #[embassy_executor::task]
-pub async fn numeric_led_driver(display_pins: NumericLedPins, persistence: Duration) {
-    let mut led_display = NumericLed::from(display_pins);
+pub async fn numeric_led_driver(numeric_led_pins: NumericLedPins, persistence: Duration) -> ! {
+    let mut numeric_led = NumericLed::from(numeric_led_pins);
     loop {
         let score = SCORE.load(Ordering::Relaxed);
-        let decimal_pos = *DECIMAL_POS.lock().await;
-        led_display.set(score, decimal_pos, persistence).await;
+        numeric_led.set(score, persistence).await;
     }
 }

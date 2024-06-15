@@ -4,7 +4,6 @@ use core::sync::atomic::Ordering;
 use embassy_time::Timer;
 use game_mode::GameMode;
 
-use crate::numeric_led_driver::NumericLed;
 use crate::{Message, GAME_CHANNEL, SCORE_CHANNEL, SOLO_LED_CHANNEL, SCORE};
 
 pub async fn game_loop() -> ! {

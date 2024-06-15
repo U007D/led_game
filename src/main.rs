@@ -1,4 +1,4 @@
-#![feature(error_in_core, never_type)]
+#![feature(never_type)]
 #![no_std]
 #![no_main]
 
@@ -7,12 +7,19 @@ use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
 use embassy_time::{Duration, Timer};
 
-use led_game::{button_driver, error::Result, game_loop, numeric_led_driver::{numeric_led_driver, NumericLedPins}, score_driver, solo_led_driver};
+use led_game::{
+    button_driver,
+    error::Result,
+    game_loop,
+    numeric_led_driver::{numeric_led_driver, NumericLedPins},
+    score_driver, solo_led_driver,
+};
+
 #[allow(unused_imports)]
 use {defmt_rtt as _, panic_probe as _};
 
-// Define maximum waitable `Duration` (`Timer::after()`).  Emperically derived.
-const MAX_DURATION: Duration = Duration::from_secs(1 << 45 -1);
+// Define maximum waitable `Duration` (`Timer::after()`).  Empirically derived.
+const MAX_DURATION: Duration = Duration::from_secs(1 << 45 - 1);
 const LED_DISPLAY_PERSISTENCE_DELAY: Duration = Duration::from_millis(1);
 const SCORE_DRIVER_UPDATE_PERIOD: Duration = Duration::from_millis(1);
 
@@ -27,14 +34,14 @@ async fn main(spawner: Spawner) -> ! {
 
 async fn inner_main(spawner: Spawner) -> Result<!> {
     let p = embassy_rp::init(Default::default());
-    let led_display_pins = NumericLedPins::new(
+    let numeric_led_pins = NumericLedPins::new(
         p.PIN_1, p.PIN_2, p.PIN_3, p.PIN_4, p.PIN_5, p.PIN_6, p.PIN_7, p.PIN_8, p.PIN_9, p.PIN_10,
         p.PIN_11, p.PIN_12,
     );
 
     spawner
         .spawn(numeric_led_driver(
-            led_display_pins,
+            numeric_led_pins,
             LED_DISPLAY_PERSISTENCE_DELAY,
         ))
         .map_err(|err| (err, "numeric_led_driver"))?;

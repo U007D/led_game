@@ -2,7 +2,7 @@ use crate::{GAME_CHANNEL, message::Message};
 use embassy_rp::gpio::{AnyPin, Input, Pull};
 
 #[embassy_executor::task]
-pub async fn button_driver(button_pin: AnyPin) {
+pub async fn button_driver(button_pin: AnyPin) -> ! {
     let mut button = Input::new(button_pin, Pull::Down);
 
     loop {

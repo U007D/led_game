@@ -1,51 +1,57 @@
 mod encoded_led_digit;
-mod numeric_led_pins;
 mod led_panel;
+mod numeric_led_pins;
 
 use core::cmp::min;
-use embassy_rp::gpio::{AnyPin, Level, Output};
+use embassy_rp::gpio::{Level, Output};
+use embassy_rp::peripherals;
 use embassy_time::{Duration, Timer};
 
-use crate::numeric_led_driver::DecimalPos;
+use crate::DECIMAL_SEPARATOR;
 pub use {
     encoded_led_digit::{EncodedLedDigit, NumberLedDigit},
+    led_panel::{DecimalSeparator, LedPanel},
     numeric_led_pins::NumericLedPins,
-    led_panel::LedPanel,
 };
 
-pub struct NumericLed<'d> {
-    dig_1: Output<'d, AnyPin>,
-    dig_2: Output<'d, AnyPin>,
-    dig_3: Output<'d, AnyPin>,
-    dig_4: Output<'d, AnyPin>,
-    a: Output<'d, AnyPin>,
-    b: Output<'d, AnyPin>,
-    c: Output<'d, AnyPin>,
-    d: Output<'d, AnyPin>,
-    e: Output<'d, AnyPin>,
-    f: Output<'d, AnyPin>,
-    g: Output<'d, AnyPin>,
-    dp: Output<'d, AnyPin>,
+pub struct NumericLed<'pin> {
+    dig_1: Output<'pin, peripherals::PIN_1>,
+    dig_2: Output<'pin, peripherals::PIN_2>,
+    dig_3: Output<'pin, peripherals::PIN_3>,
+    dig_4: Output<'pin, peripherals::PIN_4>,
+    a: Output<'pin, peripherals::PIN_5>,
+    b: Output<'pin, peripherals::PIN_6>,
+    c: Output<'pin, peripherals::PIN_7>,
+    d: Output<'pin, peripherals::PIN_8>,
+    e: Output<'pin, peripherals::PIN_9>,
+    f: Output<'pin, peripherals::PIN_10>,
+    g: Output<'pin, peripherals::PIN_11>,
+    dp: Output<'pin, peripherals::PIN_12>,
 }
 
 impl NumericLed<'_> {
     pub const MAX: u16 = 9999;
     const DECIMAL_BASE: u16 = 10;
-    const PANEL: [LedPanel; 4] = [LedPanel::Four, LedPanel::Three, LedPanel::Two, LedPanel::One];
+    const PANEL: [LedPanel; 4] = [
+        LedPanel::Four,
+        LedPanel::Three,
+        LedPanel::Two,
+        LedPanel::One,
+    ];
 
     pub fn new(
-        dig_1: AnyPin,
-        dig_2: AnyPin,
-        dig_3: AnyPin,
-        dig_4: AnyPin,
-        a: AnyPin,
-        b: AnyPin,
-        c: AnyPin,
-        d: AnyPin,
-        e: AnyPin,
-        f: AnyPin,
-        g: AnyPin,
-        dp: AnyPin,
+        dig_1: peripherals::PIN_1,
+        dig_2: peripherals::PIN_2,
+        dig_3: peripherals::PIN_3,
+        dig_4: peripherals::PIN_4,
+        a: peripherals::PIN_5,
+        b: peripherals::PIN_6,
+        c: peripherals::PIN_7,
+        d: peripherals::PIN_8,
+        e: peripherals::PIN_9,
+        f: peripherals::PIN_10,
+        g: peripherals::PIN_11,
+        dp: peripherals::PIN_12,
     ) -> Self {
         Self {
             dig_1: Output::new(dig_1, Level::High),
@@ -67,28 +73,27 @@ impl NumericLed<'_> {
         &mut self,
         panel: LedPanel,
         encoded_digit: E,
-        decimal_pos: DecimalPos,
         persistence: Duration,
     ) -> &mut Self {
         self.enable_write(panel);
         let encoding = encoded_digit.into().encoding();
         use EncodedLedDigit as Ed;
         self.a
-            .set_level((encoding & (0x1 << Ed::A_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::A_BIT_POS)) != 0).into());
         self.b
-            .set_level((encoding & (0x1 << Ed::B_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::B_BIT_POS)) != 0).into());
         self.c
-            .set_level((encoding & (0x1 << Ed::C_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::C_BIT_POS)) != 0).into());
         self.d
-            .set_level((encoding & (0x1 << Ed::D_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::D_BIT_POS)) != 0).into());
         self.e
-            .set_level((encoding & (0x1 << Ed::E_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::E_BIT_POS)) != 0).into());
         self.f
-            .set_level((encoding & (0x1 << Ed::F_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::F_BIT_POS)) != 0).into());
         self.g
-            .set_level((encoding & (0x1 << Ed::G_BIT_POS) != 0).into());
+            .set_level(((encoding & (0x1 << Ed::G_BIT_POS)) != 0).into());
         self.dp.set_level(
-            ((encoding & (0x1 << Ed::DP_BIT_POS) != 0) || panel.has_dp(decimal_pos)).into(),
+            ((encoding & (0x1 << Ed::DP_BIT_POS) != 0) || panel.has_dp(DECIMAL_SEPARATOR)).into(),
         );
         Timer::after(persistence).await;
         self.disable_write(panel);
@@ -118,12 +123,7 @@ impl NumericLed<'_> {
         self
     }
 
-    pub async fn set<V: Into<u16>>(
-        &mut self,
-        value: V,
-        decimal_pos: DecimalPos,
-        persistence: Duration,
-    ) -> &mut Self {
+    pub async fn set<V: Into<u16>>(&mut self, value: V, persistence: Duration) -> &mut Self {
         // Clip value to displayable range 0000-9999.
         let mut value = min(value.into(), Self::MAX);
 
@@ -135,7 +135,7 @@ impl NumericLed<'_> {
                 )
             });
             value /= Self::DECIMAL_BASE;
-            self.set_digit(panel, digit, decimal_pos, persistence).await;
+            self.set_digit(panel, digit, persistence).await;
         }
         self
     }

@@ -6,7 +6,7 @@ use embassy_time::{Duration, Instant, Timer};
 use score_state::ScoreMode;
 
 #[embassy_executor::task]
-pub async fn score_driver(update_period: Duration) {
+pub async fn score_driver(update_period: Duration) -> ! {
     let mut start_time = Instant::now();
     let mut mode = ScoreMode::default();
     loop {
