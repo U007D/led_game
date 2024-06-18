@@ -1,28 +1,31 @@
 mod game_mode;
 
 use core::sync::atomic::Ordering;
+use embassy_futures::select::{select, select_array, Either};
 use embassy_time::Timer;
 use game_mode::GameMode;
 
-use crate::{Message, GAME_CHANNEL, SCORE_CHANNEL, SOLO_LED_CHANNEL, SCORE};
+use crate::message::NowPlayingLedMsg;
+use crate::{message, GAME_CHANNEL, NOW_PLAYING_LED_CHANNEL, SCORE_CHANNEL, SCORE};
 
 pub async fn game_loop() -> ! {
-    let mut mode = GameMode::default();
+    let mut mode = GameMode::Stopped;
 
     loop {
         let msg = GAME_CHANNEL.receive().await;
-        use GameMode as Gm;
-        use Message as M;
 
+        use message::{GameMsg as GMsg, NowPlayingLedMsg as NpMsg, ScoreMsg as SMsg};
+        use GameMode as GMode;
         match (mode, msg) {
             // GameMode::Stopped message handlers
-            (Gm::Stopped, M::ButtonDown) => {
-                SOLO_LED_CHANNEL.send(M::SoloLedOn).await;
+            (GMode::Stopped, GMsg::ButtonDown) => {
                 SCORE.store(0, Ordering::Relaxed);
             }
-            (Gm::Stopped, Message::ButtonUp) => {
-                GAME_CHANNEL.send(M::SoloLedOff).await;
+
+            (GMode::Stopped, GMsg::ButtonUp) => {
+                NOW_PLAYING_LED_CHANNEL.send(NpMsg::On).await;
                 Timer::after_secs(3).await;
+                SCORE_CHANNEL.send(SMsg::Start).await;
                 // let msg_res = GAME_CHANNEL.try_receive();
                 // match msg_res {
                 //     // User pressed button too early; gets max score
@@ -32,21 +35,29 @@ pub async fn game_loop() -> ! {
                 //     }
                 //     // No button press yet--game on
                 //     Err(_) => {
-                        SOLO_LED_CHANNEL.send(M::SoloLedOn).await;
-                        SCORE_CHANNEL.send(M::StartTimer).await;
-                        mode = GameMode::Timing;
+
+                mode = GameMode::Timing;
                 //     }
                 // }
             }
-            (Gm::Stopped, _) => {}
 
-            // GameMode::Timing message handlers
-            (Gm::Timing, Message::ButtonDown) => {
-                SCORE_CHANNEL.send(M::StopTimer).await;
-                SOLO_LED_CHANNEL.send(M::SoloLedOff).await;
+            // `GameMode::Timing` message handlers
+            (GMode::Timing, GMsg::ButtonDown) => {
+                SCORE_CHANNEL.send(SMsg::Stop).await;
+                NOW_PLAYING_LED_CHANNEL.send(NpMsg::Off).await;
+            }
+
+            // Hold off on setting `GameMode::Stopped` until the button is released
+            // (otherwise state would conflate with `(GMode::Stopped, BMsg::Up)`)
+            (GMode::Timing, GMsg::ButtonUp) => {
                 mode = GameMode::Stopped;
             }
-            (Gm::Timing, _) => {}
+
+            (_, GMsg::ScoreOverflow) => {
+                SCORE_CHANNEL.send(SMsg::Stop).await;
+                NOW_PLAYING_LED_CHANNEL.send(NpMsg::Off).await;
+                mode = GameMode::Stopped;
+            }
         }
     }
 }

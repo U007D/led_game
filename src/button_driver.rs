@@ -1,4 +1,4 @@
-use crate::{GAME_CHANNEL, message::Message};
+use crate::{GAME_CHANNEL, message::GameMsg as Gm};
 use embassy_rp::gpio::{AnyPin, Input, Pull};
 
 #[embassy_executor::task]
@@ -7,9 +7,9 @@ pub async fn button_driver(button_pin: AnyPin) -> ! {
 
     loop {
         button.wait_for_rising_edge().await;
-        GAME_CHANNEL.send(Message::ButtonDown).await;
+        GAME_CHANNEL.send(Gm::ButtonDown).await;
 
         button.wait_for_falling_edge().await;
-        GAME_CHANNEL.send(Message::ButtonUp).await;
+        GAME_CHANNEL.send(Gm::ButtonUp).await;
     }
 }

@@ -75,8 +75,8 @@ impl NumericLed<'_> {
         encoded_digit: E,
         persistence: Duration,
     ) -> &mut Self {
-        self.enable_write(panel);
         let encoding = encoded_digit.into().encoding();
+        self.enable_write(panel);
         use EncodedLedDigit as Ed;
         self.a
             .set_level(((encoding & (0x1 << Ed::A_BIT_POS)) != 0).into());
