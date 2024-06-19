@@ -1,6 +1,10 @@
-use crate::{GAME_CHANNEL, NOW_PLAYING_LED_CHANNEL, SCORE, SCORE_CHANNEL};
+use crate::{
+    GAME_CHANNEL, MAX_DELAY_MS, MIN_DELAY_MS, NOW_PLAYING_LED_CHANNEL, SCORE, SCORE_CHANNEL,
+};
 use core::sync::atomic::Ordering;
-use embassy_time::{Duration, Timer};
+use embassy_time::{with_timeout, Duration, Instant};
+use rand::rngs::SmallRng;
+use rand::{RngCore, SeedableRng};
 
 use crate::message::{GameMsg, NowPlayingLedMsg, ScoreMsg};
 
@@ -61,6 +65,7 @@ impl GameState {
                     NOW_PLAYING_LED_CHANNEL.send(NowPlayingLedMsg::On).await;
                     self.random_pause().await;
                     SCORE_CHANNEL.send(ScoreMsg::Start).await;
+
                     break;
                 }
                 _ => {}
@@ -100,8 +105,22 @@ impl GameState {
     }
 
     async fn random_pause(&self) {
-        // Pause for a random duration from (0.5..=5)s
-        Timer::after(Duration::from_secs(3)).await; // TODO: Make random
+        let delay = SmallRng::seed_from_u64(0x0DDB1A5E5BAD5EED).next_u64()
+            % (MAX_DELAY_MS.saturating_sub(MIN_DELAY_MS)).saturating_add(MIN_DELAY_MS);
+        // Pause for a random duration from (0.5..=5)s.  Eat all messages (button key presses)
+        // during delay period
+        let delay_period = Duration::from_millis(delay);
+        let delay_start = Instant::now();
+        loop {
+            let elapsed_time = Instant::now().saturating_duration_since(delay_start);
+            match elapsed_time >= delay_period {
+                false => {
+                    let _ =
+                        with_timeout(Duration::from_millis(delay), GAME_CHANNEL.receive()).await;
+                }
+                true => break,
+            }
+        }
     }
 }
 
