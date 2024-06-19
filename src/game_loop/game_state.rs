@@ -1,6 +1,6 @@
 use crate::{GAME_CHANNEL, NOW_PLAYING_LED_CHANNEL, SCORE, SCORE_CHANNEL};
 use core::sync::atomic::Ordering;
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Instant, with_timeout};
 
 use crate::message::{GameMsg, NowPlayingLedMsg, ScoreMsg};
 
@@ -100,15 +100,20 @@ impl GameState {
     }
 
     async fn random_pause(&self) {
-        // Pause for a random duration from (0.5..=5)s
-        Timer::after(Duration::from_secs(3)).await; // TODO: Make random
+        // Pause for a random duration from (0.5..=5)s.  Eat all messages (button key presses)
+        // during delay period
+        let delay_period = Duration::from_secs(3);
+        let delay_start = Instant::now();
+        loop {
+            let elapsed_time = Instant::now().saturating_duration_since(delay_start);
+            match elapsed_time >= delay_period {
+                false => {
+                    let _ =
+
+                        with_timeout(delay_period - elapsed_time, GAME_CHANNEL.receive()).await;
+                }
+                true => break,
+            }
+        }
     }
 }
-
-// (_, GMsg::ScoreOverflow) => {
-// SCORE_CHANNEL.send(SMsg::Stop).await;
-// NOW_PLAYING_LED_CHANNEL.send(NpMsg::Off).await;
-// state = GameState::Stopped;
-// }
-// }
-// }
