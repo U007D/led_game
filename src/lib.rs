@@ -4,9 +4,9 @@
 pub mod button_driver;
 pub mod error;
 
-pub mod game;
+// pub mod game;
 // pub mod game_old;
-// mod game_loop;
+mod game_loop;
 mod message;
 mod now_playing_led_driver;
 pub mod numeric_led_driver;
@@ -21,7 +21,7 @@ use embassy_time::Duration;
 
 use crate::numeric_led_driver::DecimalSeparator;
 pub use {
-    button_driver::button_driver, now_playing_led_driver::now_playing_led_driver,
+    button_driver::button_driver, game_loop::game_loop, now_playing_led_driver::now_playing_led_driver,
     score_driver::score_driver,
 };
 

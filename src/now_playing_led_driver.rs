@@ -14,7 +14,6 @@ pub async fn now_playing_led_driver(led_pin: AnyPin) -> ! {
             Np::Off => {
                 led.set_low();
             }
-            _ => {}
         }
     }
 }

@@ -5,16 +5,19 @@
 use defmt::error;
 use embassy_executor::Spawner;
 use embassy_rp::gpio::Pin;
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 
 use led_game::{
     button_driver,
     error::Result,
-    game_old::{self, Game},
-    game_loop, now_playing_led_driver,
+    // game_old::{self, Game},
+    game_loop,
+    now_playing_led_driver,
     numeric_led_driver::{numeric_led_driver, NumericLedPins},
-    score_driver, GAME_CHANNEL, LED_DISPLAY_PERSISTENCE_DELAY, MAX_WAITABLE_DURATION,
-    NOW_PLAYING_LED_CHANNEL, NUMERIC_LED_CHANNEL, SCORE_CHANNEL, SCORE_DRIVER_UPDATE_PERIOD,
+    score_driver,
+    LED_DISPLAY_PERSISTENCE_DELAY,
+    MAX_WAITABLE_DURATION,
+    SCORE_DRIVER_UPDATE_PERIOD,
 };
 
 #[allow(unused_imports)]
@@ -30,12 +33,41 @@ async fn main(spawner: Spawner) -> ! {
 }
 
 async fn inner_main(spawner: Spawner) -> Result<!> {
-    let game = Game::new(
-        spawner,
-        GAME_CHANNEL.receiver(),
-        NOW_PLAYING_LED_CHANNEL.sender(),
-        NUMERIC_LED_CHANNEL.sender(),
-        SCORE_CHANNEL.sender(),
+    let periphs = embassy_rp::init(Default::default());
+
+    let led_display_pins = NumericLedPins::new(
+        periphs.PIN_1,
+        periphs.PIN_2,
+        periphs.PIN_3,
+        periphs.PIN_4,
+        periphs.PIN_5,
+        periphs.PIN_6,
+        periphs.PIN_7,
+        periphs.PIN_8,
+        periphs.PIN_9,
+        periphs.PIN_10,
+        periphs.PIN_11,
+        periphs.PIN_12,
     );
-    game_old::run().await
+
+    spawner
+        .spawn(numeric_led_driver(
+            led_display_pins,
+            LED_DISPLAY_PERSISTENCE_DELAY,
+        ))
+        .map_err(|err| (err, "numeric_led_driver"))?;
+
+    spawner
+        .spawn(score_driver(SCORE_DRIVER_UPDATE_PERIOD))
+        .map_err(|err| (err, "score _driver"))?;
+
+    spawner
+        .spawn(now_playing_led_driver(periphs.PIN_0.degrade()))
+        .map_err(|err| (err, "solo_led_driver"))?;
+
+    spawner
+        .spawn(button_driver(periphs.PIN_13.degrade()))
+        .map_err(|err| (err, "button_driver"))?;
+
+    game_loop().await
 }
