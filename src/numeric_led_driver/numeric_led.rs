@@ -7,7 +7,6 @@ use embassy_rp::gpio::{Level, Output};
 use embassy_rp::peripherals;
 use embassy_time::{Duration, Timer};
 
-use crate::DECIMAL_SEPARATOR;
 pub use {
     encoded_led_digit::{EncodedLedDigit, NumberLedDigit},
     led_panel::{DecimalSeparator, LedPanel},
@@ -93,7 +92,9 @@ impl NumericLed<'_> {
         self.g
             .set_level(((encoding & (0x1 << Ed::G_BIT_POS)) != 0).into());
         self.dp.set_level(
-            ((encoding & (0x1 << Ed::DP_BIT_POS) != 0) || panel.has_dp(DECIMAL_SEPARATOR)).into(),
+            ((encoding & (0x1 << Ed::DP_BIT_POS) != 0)
+                || panel.has_dp(DecimalSeparator::Thousands))
+            .into(),
         );
         Timer::after(persistence).await;
         self.disable_write(panel);
